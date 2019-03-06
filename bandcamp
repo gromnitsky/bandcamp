@@ -1,0 +1,29 @@
+#!/usr/bin/make -f
+
+$(if $(u),,$(error missing u= param))
+SHELL := /bin/bash
+
+download.mk: urls.txt
+	echo all: > $@
+	idx=0; for url in `cat $<`; do \
+	  idx=$$((idx+1)); \
+	  printf '%s:\n\t%s\n' $$idx.mp3 "curl -fL '$$url' > \$$@"; \
+	  echo all: $$idx.mp3; \
+	 done >> $@
+	echo .DELETE_ON_ERROR: >> $@
+
+urls.txt: script.js
+	set -o pipefail; node $< | json trackinfo | json -a file.mp3-128 > $@
+
+script.begin = var TralbumData
+script.end = window.FacebookData
+script.js: page.html
+	nokogiri -e '$$_.css("script").each {|s| puts s.text if s.text =~ /$(script.begin)/}' < $< | \
+	 sed -n '/$(script.begin)/,/$(script.end)/p' | head -n-1 | \
+	 cat - <(echo 'console.log(JSON.stringify(TralbumData))') > $@
+
+page.html:
+	curl -sfL $(u) > $@
+
+#.INTERMEDIATE: page.html script.js urls.txt
+.DELETE_ON_ERROR:
