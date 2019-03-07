@@ -11,7 +11,7 @@ $(t)Makefile: $(t)script.js
 script.begin = var TralbumData
 script.end = window.FacebookData
 $(t)script.js: $(t)page.html
-	nokogiri -e '$$_.css("script").each {|s| puts s.text if s.text =~ /$(script.begin)/}' < $< | \
+	nokogiri -e 'puts $$_.css("script").each {|s| break s.text if s.text =~ /$(script.begin)/}' < $< | \
 	 sed -n '/$(script.begin)/,/$(script.end)/p' | head -n-1 | \
 	 cat - <(echo "$$generator") > $@
 
