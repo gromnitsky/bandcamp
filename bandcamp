@@ -2,24 +2,37 @@
 
 $(if $(u),,$(error missing u= param))
 SHELL := /bin/bash
+t := $(shell mktemp -u tmp.XXXXXXXXXX.)
 
-Makefile: script.js; node $< > $@
+$(t)Makefile: $(t)script.js
+	node $< > $@
+	$(MAKE) -f $@
 
 script.begin = var TralbumData
 script.end = window.FacebookData
-script.js: page.html
+$(t)script.js: $(t)page.html
 	nokogiri -e '$$_.css("script").each {|s| puts s.text if s.text =~ /$(script.begin)/}' < $< | \
 	 sed -n '/$(script.begin)/,/$(script.end)/p' | head -n-1 | \
 	 cat - <(echo "$$generator") > $@
 
 export define generator :=
-let urls = TralbumData.trackinfo.map( v => v.file && v.file['mp3-128']).filter( v => v)
-console.log('.PHONY: all\nall:', urls.map( (_, idx) => `$${idx+1}.mp3`).join` `)
-console.log(urls.map( (t, idx) => `$${idx+1}.mp3:\n\tcurl -fL '$${t}' > $$@`).join`\n`)
+let q = s => s.replace(/[^\w,.]/g, '_')
+let pad = (n, l) => ('0' + n).slice(-l)
+let files = TralbumData.trackinfo.filter(v => v.file && v.file['mp3-128'])
+
+let year = new Date(TralbumData.album_release_date || 0).getUTCFullYear()
+let max = files.reduce((a, c) => Math.max(a, c.track_num), 0).toString().length
+let out = `$${q(TralbumData.artist)}__$${year}__$${q(TralbumData.current.title)}`
+let fname = t => out + '/' + pad(t.track_num, max) + '-' + q(t.title) + '.mp3'
+let url = t => t.file['mp3-128']
+
+console.log('.PHONY: all\nall:', files.map(v => fname(v)).join ` `)
+console.log(files.map( v => [fname(v)+':', '$$(mkdir)', `curl -sfL '$${url(v)}' > $$@`].join`\n\t`).join `\n`)
+console.log('mkdir = @mkdir -p $$(dir $$@)')
 console.log('.DELETE_ON_ERROR:')
 endef
 
-page.html:; curl -sfL $(u) > $@
+$(t)page.html:; curl -sfL '$(u)' > $@
 
-.INTERMEDIATE: page.html script.js
+.INTERMEDIATE: $(addprefix $(t), page.html script.js Makefile)
 .DELETE_ON_ERROR:
