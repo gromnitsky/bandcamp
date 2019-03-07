@@ -18,13 +18,13 @@ $(t)script.js: $(t)page.html
 export define generator :=
 let q = s => s.replace(/[^\w,.]/g, '_')
 let pad = (n, l) => ('0' + n).slice(-l)
-let files = TralbumData.trackinfo.filter(v => v.file && v.file['mp3-128'])
+let url = t => t.file && t.file['mp3-128']
+let fname = t => out + '/' + pad(t.track_num, max) + '-' + q(t.title) + '.mp3'
 
+let files = TralbumData.trackinfo.filter( v => url(v))
 let year = new Date(TralbumData.album_release_date || 0).getUTCFullYear()
 let max = files.reduce((a, c) => Math.max(a, c.track_num), 0).toString().length
-let out = `$${q(TralbumData.artist)}__$${year}__$${q(TralbumData.current.title)}`
-let fname = t => out + '/' + pad(t.track_num, max) + '-' + q(t.title) + '.mp3'
-let url = t => t.file['mp3-128']
+let out = q(TralbumData.artist) + `__$${year}__` + q(TralbumData.current.title)
 
 console.log('.PHONY: all\nall:', files.map(v => fname(v)).join ` `)
 console.log(files.map( v => [fname(v)+':', '$$(mkdir)', `curl -sfL '$${url(v)}' > $$@`].join`\n\t`).join `\n`)
