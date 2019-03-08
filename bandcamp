@@ -10,8 +10,8 @@ $(t)Makefile: $(t)script.js
 
 script.match = TralbumData
 $(t)script.js: $(t)page.html
-	set -o pipefail; nokogiri -e 'puts $$_.css("script").find {|s| s.text =~ /$(script.match)/}.text' < $< |\
-	 ruby -rrkelly -e 'puts RKelly::Parser.new.parse(STDIN.read).find {|n| n.respond_to?(:name) && n.name == "$(script.match)"}.to_ecma' |\
+	set -o pipefail; nokogiri -e 'puts $$_.css("script").find {|s| s.text["$(script.match)"]}.text' < $< |\
+	 ruby -rrkelly -e 'puts RKelly::Parser.new.parse(STDIN.read).find {|n| n.is_a?(RKelly::Nodes::VarDeclNode) && n.name == "$(script.match)"}.to_ecma' |\
 	 cat - <(echo "$$generator") > $@
 
 export define generator :=
