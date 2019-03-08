@@ -8,11 +8,10 @@ $(t)Makefile: $(t)script.js
 	node $< > $@
 	$(MAKE) -f $@
 
-script.begin = var TralbumData
-script.end = window.FacebookData
+script.match = TralbumData
 $(t)script.js: $(t)page.html
-	nokogiri -e 'puts $$_.css("script").each {|s| break s.text if s.text =~ /$(script.begin)/}' < $< | \
-	 sed -n '/$(script.begin)/,/$(script.end)/p' | head -n-1 | \
+	set -o pipefail; nokogiri -e 'puts $$_.css("script").find {|s| s.text =~ /$(script.match)/}.text' < $< |\
+	 ruby -rrkelly -e 'puts RKelly::Parser.new.parse(STDIN.read).find {|n| n.respond_to?(:name) && n.name == "$(script.match)"}.to_ecma' |\
 	 cat - <(echo "$$generator") > $@
 
 export define generator :=
