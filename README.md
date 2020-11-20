@@ -17,7 +17,7 @@ You can add any gmake options, like `-j4` for parallel downloads.
 Requirements:
 
 * gnu make
-* `gem install nokogiri rkelly-remix`
+* `gem install nokogiri`
 * node
 
 # License

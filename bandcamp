@@ -1,20 +1,22 @@
 #!/usr/bin/make -f
 
 $(if $(u),,$(error missing u= param))
-SHELL := bash
+SHELL := bash -o pipefail
 t := $(shell mktemp -u tmp.XXXXXXXXXX.)
 
 $(t)Makefile: $(t)script.js
 	node $< > $@
 	$(MAKE) -f $@
 
-script.match = TralbumData
-$(t)script.js: $(t)page.html
-	set -o pipefail; nokogiri -e 'puts $$_.css("script").find {|s| s.text["$(script.match)"]}.text' < $< |\
-	 ruby -rrkelly -e 'puts RKelly::Parser.new.parse(STDIN.read).find {|n| n.is_a?(RKelly::Nodes::VarDeclNode) && n.name == "$(script.match)"}.to_ecma' |\
-	 cat - <(echo "$$generator") > $@
+$(t)tralbum.json: $(t)page.html
+	nokogiri -e 'puts $$_.css("script").find {|t| t["data-tralbum"]}["data-tralbum"]' < $< > $@
+
+$(t)script.js: $(t)tralbum.json
+	echo "$$generator" > $@
 
 export define generator :=
+let TralbumData = require('./$(t)tralbum.json')
+
 let q = s => s.replace(/[^\w,.]/g, '_')
 let pad = (n, l) => ('0' + n).slice(-l)
 let url = t => t.file && t.file['mp3-128']
@@ -33,5 +35,5 @@ endef
 
 $(t)page.html:; curl -sfL '$(u)' > $@
 
-.INTERMEDIATE: $(addprefix $(t), page.html script.js Makefile)
+.INTERMEDIATE: $(addprefix $(t), page.html script.js tralbum.json Makefile)
 .DELETE_ON_ERROR:
