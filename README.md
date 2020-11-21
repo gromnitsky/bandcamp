@@ -17,8 +17,8 @@ You can add any gmake options, like `-j4` for parallel downloads.
 Requirements:
 
 * gnu make
-* `gem install nokogiri`
-* node
+* `npm i -g adieu`
+* curl
 
 # License
 

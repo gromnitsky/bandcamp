@@ -1,7 +1,6 @@
 #!/usr/bin/make -f
 
 $(if $(u),,$(error missing u= param))
-SHELL := bash -o pipefail
 t := $(shell mktemp -u tmp.XXXXXXXXXX.)
 
 $(t)Makefile: $(t)script.js
@@ -9,7 +8,7 @@ $(t)Makefile: $(t)script.js
 	$(MAKE) -f $@
 
 $(t)tralbum.json: $(t)page.html
-	nokogiri -e 'puts $$_.css("script").find {|t| t["data-tralbum"]}["data-tralbum"]' < $< > $@
+	adieu -pe 'JSON.stringify($$("script").filter( (_,v) => $$(v).data("tralbum")).first().data("tralbum"))' $< > $@
 
 $(t)script.js: $(t)tralbum.json
 	echo "$$generator" > $@
